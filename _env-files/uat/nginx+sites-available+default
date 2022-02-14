@@ -1,0 +1,64 @@
+
+# Default server configuration
+#
+
+upstream dex_node_app {
+	server 127.0.0.1:3030;
+	keepalive 64;
+}
+
+server {
+	server_name library-uat.brewdigital.uk;
+
+	root /var/www/html;
+
+	index index.html index.htm;
+
+	location / {
+        auth_basic "Authentication Required";
+        auth_basic_user_file /etc/nginx/.htpasswd;
+
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header Host $http_host;
+        proxy_set_header X-NginX-Proxy true;
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_max_temp_file_size 0;
+        proxy_pass http://dex_node_app;
+        proxy_redirect off;
+        proxy_read_timeout 240s;
+    }
+
+#	location / {
+#	    try_files $uri $uri/ /index.html;
+#
+#       auth_basic "Authentication Required";
+#       auth_basic_user_file /etc/nginx/.htpasswd;
+#	}
+
+#   location ~ /\.ht{
+#	    deny all;
+#   }
+
+	listen [::]:443 ssl ipv6only=on; # managed by Certbot
+	listen 443 ssl; # managed by Certbot
+	ssl_certificate /etc/letsencrypt/live/library-uat.brewdigital.uk/fullchain.pem; # managed by Certbot
+	ssl_certificate_key /etc/letsencrypt/live/library-uat.brewdigital.uk/privkey.pem; # managed by Certbot
+	include /etc/letsencrypt/options-ssl-nginx.conf; # managed by Certbot
+	ssl_dhparam /etc/letsencrypt/ssl-dhparams.pem; # managed by Certbot
+}
+
+# Redirect any non-HTTPS requests to HTTPS
+server {
+	if ($host = library-uat.brewdigital.uk) {
+        	return 301 https://$host$request_uri;
+	} # managed by Certbot
+
+	listen 80 default_server;
+	listen [::]:80 default_server;
+
+	server_name library-uat.brewdigital.uk;
+
+	return 404; # managed by Certbot
+}
